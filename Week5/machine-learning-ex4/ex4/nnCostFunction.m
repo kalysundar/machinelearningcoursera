@@ -62,46 +62,42 @@ Theta2_grad = zeros(size(Theta2));
 %               and Theta2_grad from Part 2.
 %
 
-J = 0;
-
 X = [ones(m, 1) X];
-
-
-
-costFunc = 0;
-
 youtputconv = eye(num_labels);
 
-deltaaccumulated = 0;
+accumulatedDelta1=0;
+accumulatedDelta2=0;
 
-for i=1:3
-  firstlayer = X(i,:);
 
-  secondZ = firstlayer * Theta1';
-  secondLayer = sigmoid(secondZ);
-  secondLayer = [ones(1, 1) secondLayer];
-  outputZ = secondLayer * Theta2';
 
+
+
+
+
+for i=1:m
+  A1 = X(i,:);
+  Z2 = A1 * Theta1';
+  A2 = sigmoid(Z2);
+
+  A2 = [ones(1, 1) A2];
+  Z3 = A2 * Theta2';
+  A3 = sigmoid(Z3);
   outputyVec = youtputconv(y(i,1),:);
+  outputFunc =  (-outputyVec .* log(A3) - ((1-outputyVec) .* log(1 - A3)));
+  J =  J + (sum(outputFunc));
 
-
-  outputFunc =  (-outputyVec .* log(sigmoid(outputZ)) - ((1-outputyVec) .* log(1 - sigmoid(outputZ))));
-  J =  J + sum(outputFunc);
-
-  deltaoutput = zeros(size(outputZ));
-  deltaoutput = outputZ .- outputyVec;
-
-  disp(size(secondZ));
-  del2 =   Theta2' * deltaoutput';
-
-  delta_2 =    del2(2:end) .* sigmoidGradient(secondZ');
-  disp(size(delta_2));
-  deltaaccumulated = deltaaccumulated +  delta_2 * firstlayer ;
-  disp(size(deltaaccumulated));
+  %Back propagation begin
+  delta3 = A3 - outputyVec;
+  %disp(size(delta3));
+  %disp(size(Z2));
+  %Theta2 - 10*26, delta_out - 1 *10
+  accumulatedDelta2 = accumulatedDelta2 + A2' * delta3;
+  delta2 =  (delta3 * Theta2(:,2:end))  .* sigmoidGradient(Z2);
+  accumulatedDelta1 =  accumulatedDelta1 + A1' * delta2;
+  %disp(size(accumulatedDelta2));
+  %disp(size(accumulatedDelta1));
 
 endfor
-
-
 regTheta1 = Theta1(:,2:(input_layer_size+1));
 regTheta2 = Theta2(:,2:(hidden_layer_size+1));
 regTheta1 = regTheta1 .^ 2 ;
@@ -109,15 +105,15 @@ regTheta2 = regTheta2 .^ 2 ;
 regularizedSum = sum(sum(regTheta1,2),1) + sum(sum(regTheta2,2),1);
 regularizedCost = ((lambda/(2*m)) * regularizedSum);
 
+Theta1_grad = ( (1/m) .* accumulatedDelta1' );
+Theta2_grad = ( (1/m) .* accumulatedDelta2' );
+
+%regularized gradient
+Theta1_grad(:,2:end) = Theta1_grad(:,2:end) .+ ( (lambda/m) .* Theta1(:,2:end));
+Theta2_grad(:,2:end) = Theta2_grad(:,2:end) .+ ( (lambda/m) .* Theta2(:,2:end));
+
 J = ( (J/m) + regularizedCost);
-disp(J);
 
-
-%grad(1,1) =  ((1 / m) * sum( X(:,1) .* (sigmoid(z) - y)));
-%gradTemp =  ((1 / m) .* sum( (X(:,2:end) .* (sigmoid(z) - y)) )) .+ ((lambda/m) .* theta(2:end)');
-%gradTemp =  ((1 / m) .* sum( (X(:,2:end) .* (sigmoid(z) - y)) )) .+ ((lambda/m) .* theta(2:end)');
-
-%grad(2:end) = gradTemp(:);
 
 
 
